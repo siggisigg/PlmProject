@@ -1,0 +1,24 @@
+# Claude Code context — not for version control
+CLAUDE.md
+summary.md
+.claude/
+
+# Client reference documents
+RefrenceDocs/
+
+# PostgreSQL Docker volume data
+pgdata/
+
+# Environment files (may contain credentials)
+.env
+.env.*
+
+# Office lock files
+.~lock.*
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
