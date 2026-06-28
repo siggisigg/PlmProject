@@ -19,6 +19,7 @@ pgdata/
 .~lock.*
 
 # Python
+.venv/
 __pycache__/
 *.pyc
 
