@@ -23,5 +23,9 @@ pgdata/
 __pycache__/
 *.pyc
 
+# UI
+docker/ui/node_modules/
+docker/ui/dist/
+
 # macOS
 .DS_Store
