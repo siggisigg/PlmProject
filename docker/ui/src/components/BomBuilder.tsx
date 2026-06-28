@@ -19,16 +19,44 @@ interface Props {
 }
 
 export default function BomBuilder({ selection, onQtyChange, onRemove, onClear }: Props) {
-  const lines = Array.from(selection.values())
-
+  const lines    = Array.from(selection.values())
   const totalCost  = lines.reduce((s, l) => s + l.qty * l.part.unit_cost, 0)
   const totalPrice = lines.reduce((s, l) => s + l.qty * l.part.unit_price, 0)
   const margin     = totalPrice - totalCost
   const marginPct  = totalPrice > 0 ? (margin / totalPrice) * 100 : 0
+  const currency   = lines[0]?.part.currency ?? 'ISK'
 
   const fmt = (n: number) =>
     n.toLocaleString('da-DK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-  const currency = lines[0]?.part.currency ?? 'DKK'
+
+  function downloadCSV() {
+    const header = [
+      'Part Number', 'Description', 'Type', 'Qty',
+      'Unit Cost', 'Line Cost', 'Unit Price', 'Line Price', 'Currency',
+    ]
+    const rows = lines.map(({ part, qty }) => [
+      part.plm_part_number,
+      part.description ?? '',
+      part.production_type ?? '',
+      String(qty),
+      String(part.unit_cost),
+      String(qty * part.unit_cost),
+      String(part.unit_price),
+      String(qty * part.unit_price),
+      part.currency,
+    ])
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
+    const csv = [header, ...rows].map(r => r.map(esc).join(',')).join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `bom-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
   if (lines.length === 0) {
     return (
@@ -41,9 +69,9 @@ export default function BomBuilder({ selection, onQtyChange, onRemove, onClear }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-auto rounded border border-[#2e3348]">
-        <table className="w-full border-collapse text-[13px]">
-          <thead className="bg-[#22263a] text-left text-[11px] text-[#7880a0] uppercase tracking-wider">
+      <div className="overflow-auto max-h-[calc(100vh-260px)] rounded border border-[#2e3348]">
+        <table className="w-full border-collapse text-sm">
+          <thead className="bg-[#22263a] text-left text-xs text-[#7880a0] uppercase tracking-wider sticky top-0">
             <tr>
               <th className="px-3 py-2">Part Number</th>
               <th className="px-3 py-2">Description</th>
@@ -124,12 +152,18 @@ export default function BomBuilder({ selection, onQtyChange, onRemove, onClear }
         </table>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <button
           onClick={onClear}
           className="text-xs text-[#454c6a] hover:text-[#e05555] border border-[#2e3348] hover:border-[#e05555]/50 px-3 py-1.5 rounded transition-colors"
         >
           Clear all
+        </button>
+        <button
+          onClick={downloadCSV}
+          className="text-xs font-medium bg-[#4d7eff] hover:bg-[#3d6eef] text-white px-4 py-1.5 rounded transition-colors"
+        >
+          Generate BOM ↓
         </button>
       </div>
     </div>

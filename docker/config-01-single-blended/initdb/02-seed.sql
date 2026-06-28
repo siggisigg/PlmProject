@@ -1706,7 +1706,7 @@ SELECT
   v.revision,
   v.unit_cost,
   v.unit_price,
-  'DKK'
+  'ISK'
 FROM parts p
 JOIN (
   VALUES

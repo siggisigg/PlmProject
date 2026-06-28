@@ -48,7 +48,7 @@ CREATE TABLE part_revisions (
     revision         TEXT,
     unit_cost        NUMERIC(12, 4),
     unit_price       NUMERIC(12, 4),
-    currency         TEXT        NOT NULL DEFAULT 'DKK',
+    currency         TEXT        NOT NULL DEFAULT 'ISK',
     valid_from       TIMESTAMPTZ NOT NULL DEFAULT now(),
     valid_to         TIMESTAMPTZ             -- NULL = current revision
 );
