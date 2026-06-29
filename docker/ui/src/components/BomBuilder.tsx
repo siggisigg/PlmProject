@@ -16,9 +16,10 @@ interface Props {
   onQtyChange: (partId: number, qty: number) => void
   onRemove: (partId: number) => void
   onClear: () => void
+  onBack: () => void
 }
 
-export default function BomBuilder({ selection, onQtyChange, onRemove, onClear }: Props) {
+export default function BomBuilder({ selection, onQtyChange, onRemove, onClear, onBack }: Props) {
   const lines    = Array.from(selection.values())
   const totalCost  = lines.reduce((s, l) => s + l.qty * l.part.unit_cost, 0)
   const totalPrice = lines.reduce((s, l) => s + l.qty * l.part.unit_price, 0)
@@ -60,9 +61,15 @@ export default function BomBuilder({ selection, onQtyChange, onRemove, onClear }
 
   if (lines.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-[#454c6a] gap-2">
-        <p className="text-sm">No parts selected</p>
-        <p className="text-xs">Go to the Parts Catalog tab and click rows to add them here.</p>
+      <div className="flex flex-col items-center justify-center py-24 text-[#454c6a] gap-4">
+        <p className="text-sm">No systems selected</p>
+        <p className="text-xs">Go back and select one or more systems to build a BOM.</p>
+        <button
+          onClick={onBack}
+          className="mt-2 text-xs text-[#7880a0] hover:text-[#e4e6f0] border border-[#2e3348] hover:border-[#454c6a] px-4 py-2 rounded transition-colors"
+        >
+          ← Back to Catalog
+        </button>
       </div>
     )
   }
@@ -152,7 +159,14 @@ export default function BomBuilder({ selection, onQtyChange, onRemove, onClear }
         </table>
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onBack}
+          className="text-xs text-[#7880a0] hover:text-[#e4e6f0] border border-[#2e3348] hover:border-[#454c6a] px-3 py-1.5 rounded transition-colors"
+        >
+          ← Back
+        </button>
+        <div className="flex-1" />
         <button
           onClick={onClear}
           className="text-xs text-[#454c6a] hover:text-[#e05555] border border-[#2e3348] hover:border-[#e05555]/50 px-3 py-1.5 rounded transition-colors"
