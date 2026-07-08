@@ -1,0 +1,96 @@
+-- Config-01: single-currency, blended cost
+-- Parts catalog experiment — INPUT side of the system only.
+-- Flow: PDM export → _staging.parts_raw → parts + part_revisions
+
+-- ── Staging ────────────────────────────────────────────────────────────────
+CREATE SCHEMA IF NOT EXISTS _staging;
+
+-- Raw part records as they arrive from a PDM BOM export.
+-- All columns TEXT; no validation at this stage.
+CREATE TABLE _staging.parts_raw (
+    id               SERIAL PRIMARY KEY,
+    source_file      TEXT        NOT NULL,
+    row_num          INTEGER     NOT NULL,
+    plm_part_number  TEXT,
+    description      TEXT,
+    material         TEXT,
+    material_shape   TEXT,       -- "Description - Blank" xlsx column
+    material_spec    TEXT,       -- "Part number - Blank" xlsx column
+    length_mm        TEXT,
+    thickness_mm     TEXT,
+    production_type  TEXT,       -- full label, e.g. "Saw cutting (DJ)"
+    manufacturer     TEXT,
+    revision         TEXT,
+    comment          TEXT,
+    is_cut_list_item BOOLEAN     NOT NULL DEFAULT false,
+    ingested_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ── Core ───────────────────────────────────────────────────────────────────
+
+-- Unique parts (one row per physical part number in the PDM vault).
+CREATE TABLE parts (
+    id               SERIAL PRIMARY KEY,
+    plm_part_number  TEXT        NOT NULL UNIQUE,
+    description      TEXT,
+    material         TEXT,
+    production_type  TEXT,       -- code only: SS SV DJ DL DZ DS DT DP
+    manufacturer     TEXT,       -- set for purchased parts (DS / DP)
+    is_assembly      BOOLEAN     NOT NULL DEFAULT false
+);
+
+-- Versioned cost/price per part revision.
+-- unit_cost and unit_price stored as NUMERIC — never FLOAT.
+-- currency always recorded, even in single-currency mode.
+CREATE TABLE part_revisions (
+    id               SERIAL PRIMARY KEY,
+    part_id          INTEGER     NOT NULL REFERENCES parts (id),
+    revision         TEXT,
+    unit_cost        NUMERIC(12, 4),
+    unit_price       NUMERIC(12, 4),
+    currency         TEXT        NOT NULL DEFAULT 'ISK',
+    valid_from       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    valid_to         TIMESTAMPTZ             -- NULL = current revision
+);
+
+CREATE INDEX ON part_revisions (part_id);
+CREATE INDEX ON part_revisions (part_id, valid_to) WHERE valid_to IS NULL;
+
+-- ── Not in config-01 — planned for config-02 / config-03 ────────────────────
+--
+-- bom_headers
+--   id              SERIAL PK
+--   root_part_id    INTEGER → parts.id   (the top-level SS assembly)
+--   source_file     TEXT
+--   imported_at     TIMESTAMPTZ
+--   revision        TEXT
+--
+-- bom_lines  (adjacency-list tree)
+--   id              SERIAL PK
+--   bom_header_id   INTEGER → bom_headers.id
+--   parent_line_id  INTEGER → bom_lines.id   NULL = direct child of root
+--   part_id         INTEGER → parts.id
+--   quantity        NUMERIC(12,4)
+--   level_path      TEXT    -- dotted decimal from export e.g. "1.1.2"; sort/display only
+--   sort_order      INTEGER
+--
+--   Assembly rows (is_assembly = true) are structural nodes: they carry quantity
+--   multipliers but have unit_cost = 0. Only leaf parts contribute to totals.
+--
+-- projects
+--   id, name, solution_code, created_at, ...
+--
+-- project_bom_lines  (snapshot — never references live costs)
+--   id, project_id, part_id
+--   effective_qty        NUMERIC(12,4)   -- product of all ancestor quantities
+--   snapshot_unit_cost   NUMERIC(12,4)
+--   snapshot_unit_price  NUMERIC(12,4)
+--   currency             TEXT
+--   price_override       BOOLEAN
+--   snapshotted_at       TIMESTAMPTZ
+--
+-- BOM generation flow:
+--   1. Run recursive CTE over bom_lines for each selected assembly.
+--   2. Filter to leaf parts (NOT is_assembly).
+--   3. Copy (part_id, effective_qty, unit_cost, unit_price) into project_bom_lines.
+--   4. From that point on, query only project_bom_lines — never live part_revisions.
