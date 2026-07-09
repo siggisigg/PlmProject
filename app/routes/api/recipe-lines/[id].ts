@@ -2,13 +2,13 @@ import { define } from "../../../utils.ts";
 import { queryAll } from "../../../db/client.ts";
 
 export const handler = define.handlers({
-  GET(ctx) {
+  async GET(ctx) {
     const id = Number(ctx.params.id);
     if (!Number.isFinite(id)) {
       return new Response("Bad id", { status: 400 });
     }
 
-    const rows = queryAll(
+    const rows = await queryAll(
       `SELECT rl.id, rl.recipe_id, rl.part_id, rl.bom_type,
               rl.default_qty, rl.is_optional, rl.sort_order,
               p.plm_part_number, p.description, p.is_assembly, p.production_type,

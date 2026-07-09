@@ -5,8 +5,8 @@ export interface Part {
   material: string | null
   production_type: string | null
   manufacturer: string | null
-  is_assembly: number   // SQLite stores booleans as 0/1
-  is_master_assembly: number
+  is_assembly: boolean
+  is_master_assembly: boolean
   bom_type: string
   revision: string | null
   unit_cost: number
@@ -20,7 +20,7 @@ export interface Recipe {
   name: string
   description: string | null
   version: number
-  is_active: number
+  is_active: boolean
 }
 
 export interface RecipeLine {
@@ -29,11 +29,11 @@ export interface RecipeLine {
   part_id: number
   bom_type: string
   default_qty: number
-  is_optional: number   // 0/1
+  is_optional: boolean
   sort_order: number | null
   plm_part_number: string
   description: string | null
-  is_assembly: number
+  is_assembly: boolean
   production_type: string | null
   unit_cost: number
   unit_price: number

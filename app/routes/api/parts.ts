@@ -2,13 +2,13 @@ import { define } from "../../utils.ts";
 import { queryAll } from "../../db/client.ts";
 
 export const handler = define.handlers({
-  GET(ctx) {
+  async GET(ctx) {
     const url = new URL(ctx.req.url);
     const q = url.searchParams.get("q")?.trim() ?? "";
     const limit = Math.min(Number(url.searchParams.get("limit") ?? 600), 2000);
 
     const rows = q
-      ? queryAll(
+      ? await queryAll(
           `SELECT p.id, p.plm_part_number, p.description, p.material,
                   p.production_type, p.manufacturer, p.is_assembly,
                   p.is_master_assembly, p.bom_type, p.unit_of_measure,
@@ -20,12 +20,12 @@ export const handler = define.handlers({
            FROM parts p
            LEFT JOIN part_revisions r
                   ON r.part_id = p.id AND r.valid_to IS NULL
-           WHERE p.plm_part_number LIKE ? OR p.description LIKE ?
+           WHERE p.plm_part_number ILIKE ? OR p.description ILIKE ?
            ORDER BY p.plm_part_number
            LIMIT ?`,
           [`%${q}%`, `%${q}%`, limit],
         )
-      : queryAll(
+      : await queryAll(
           `SELECT p.id, p.plm_part_number, p.description, p.material,
                   p.production_type, p.manufacturer, p.is_assembly,
                   p.is_master_assembly, p.bom_type, p.unit_of_measure,
