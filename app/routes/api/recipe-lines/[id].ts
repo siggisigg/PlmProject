@@ -10,7 +10,7 @@ export const handler = define.handlers({
 
     const rows = await queryAll(
       `SELECT rl.id, rl.recipe_id, rl.part_id, rl.bom_type,
-              rl.default_qty, rl.is_optional, rl.sort_order,
+              rl.default_qty, rl.is_optional, rl.sort_order, rl.stage_id,
               p.plm_part_number, p.description, p.is_assembly, p.production_type,
               COALESCE(r.unit_cost, 0)   AS unit_cost,
               COALESCE(r.unit_price, 0)  AS unit_price,
